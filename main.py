@@ -13,6 +13,13 @@ with closing(sqlite3.connect('lens_data.db')) as conn:
     lens_score_df = pandas.read_sql('SELECT * FROM lens_score', con=conn)
 
 
+def get_lens_name(lens_id: int) -> str:
+    temp = lens_name_df.query(f'id=={lens_id}')
+    if len(temp) == 0:
+        return ''
+    return temp['name'].values[0]
+
+
 def get_score_by_f(f_value: float, table: DataFrame) -> Optional[Tuple[float, float]]:
     # print(f'【get_score_by_f({f_value})】')
     # f値が負数のものについては、絞り開放での値だと判断する
@@ -86,45 +93,62 @@ def get_score(lens_id: int, focal_length: int, f_value: float) -> Optional[Tuple
     score_df.set_index('focal_length', inplace=True)
     if len(score_df) > 4:
         score_df.interpolate(method='spline', order=3, inplace=True)
-    else:
+    elif len(score_df) > 3:
         score_df.interpolate(method='spline', order=2, inplace=True)
+    else:
+        score_df.interpolate(method='index', inplace=True)
     filtered_score_df = score_df.query(f'focal_length=={focal_length}')[['center_score', 'edge_score']]
     return filtered_score_df['center_score'].values[0], filtered_score_df['edge_score'].values[0]
 
 
 def main():
+    lens_id_list = [1, 2, 3, 4, 5]
+    focal_list = [14, 25, 40, 60, 100, 140]
+    f_value = -1
+
+    plot_width_per = 0.15
+    figsize = [8, 6]
+    ylim = 4000
+
     result_list = []
-    for fl in [14, 25, 40, 60, 100, 140]:
+    for fl in focal_list:
         record = {'focal_length': fl}
-        for lens_id in [1, 2, 3]:
-            record[f'center-{lens_id}'] = get_score(lens_id, fl, -1)[0]
-        for lens_id in [1, 2, 3]:
-            record[f'edge-{lens_id}'] = get_score(lens_id, fl, -1)[1]
+        for lens_id in lens_id_list:
+            record[f'center-{lens_id}'] = get_score(lens_id, fl, f_value)[0]
+        for lens_id in lens_id_list:
+            record[f'edge-{lens_id}'] = get_score(lens_id, fl, f_value)[1]
         result_list.append(record)
     result_df = DataFrame.from_records(result_list)
     pandas.options.display.width = 150
     pandas.options.display.max_columns = None
     print(result_df)
 
+    pyplot.figure(figsize=figsize)
+    pyplot.ylim([0, ylim])
     x_label = result_df['focal_length'].T
-    for lens_id in [1, 2, 3]:
-        x_pos = [x + 0.3 * (lens_id - 1) for x in list(range(0, len(result_df)))]
-        data_label = f'center-{lens_id}'
-        pyplot.bar(x_pos, result_df[data_label], width=0.3, label=data_label, align="center")
+    for lens_id in lens_id_list:
+        x_pos = [x + plot_width_per * (lens_id - 1) for x in list(range(0, len(result_df)))]
+        data_label = get_lens_name(lens_id)
+        pyplot.bar(x_pos, result_df[f'center-{lens_id}'], width=plot_width_per, label=data_label, align="center")
 
     pyplot.legend(loc=2)
     pyplot.xticks(list(range(0, len(result_df))), x_label)
-    pyplot.show()
+    pyplot.title('center (OpticalLimits)')
+    pyplot.savefig('output/center.png')
+    pyplot.close()
 
+    pyplot.figure(figsize=figsize)
+    pyplot.ylim([0, ylim])
     x_label = result_df['focal_length'].T
-    for lens_id in [1, 2, 3]:
-        x_pos = [x + 0.3 * (lens_id - 1) for x in list(range(0, len(result_df)))]
-        data_label = f'edge-{lens_id}'
-        pyplot.bar(x_pos, result_df[data_label], width=0.3, label=data_label, align="center")
+    for lens_id in lens_id_list:
+        x_pos = [x + plot_width_per * (lens_id - 1) for x in list(range(0, len(result_df)))]
+        data_label = get_lens_name(lens_id)
+        pyplot.bar(x_pos, result_df[f'edge-{lens_id}'], width=plot_width_per, label=data_label, align="center")
 
     pyplot.legend(loc=2)
     pyplot.xticks(list(range(0, len(result_df))), x_label)
-    pyplot.show()
+    pyplot.title('edge (OpticalLimits)')
+    pyplot.savefig('output/edge.png')
 
 
 if __name__ == '__main__':
