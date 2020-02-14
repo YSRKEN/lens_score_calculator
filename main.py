@@ -3,13 +3,26 @@ from matplotlib import pyplot
 from database import Database
 
 if __name__ == '__main__':
-    db_name = 'lens_data1.db'
-    db_label = 'OpticalLimits'
-    lens_id_list = (1, 2, 3, 5)
-    focal_list = (14, 25, 40, 60, 100, 140)
-    f_value = -1
-    graph_size = (800, 600)
-    y_limit = 4000
+    # OpticalLimits基準→2000がBetter、2500がGood、3000が限界っぽい
+    # ePhotozine基準→154がFair、230がGood、306がExcellent
+
+    mode = 'ePhotozine'
+    if mode == 'OpticalLimits':
+        db_name = 'lens_data1.db'
+        db_label = 'OpticalLimits'
+        lens_id_list = (1, 2, 3, 4, 5)
+        focal_list = (14, 25, 40, 60, 100, 140)
+        f_value = -1
+        graph_size = (800, 600)
+        y_limit = 4000
+    elif mode == 'ePhotozine':
+        db_name = 'lens_data2.db'
+        db_label = 'ePhotozine'
+        lens_id_list = (1, 2, 3, 4)
+        focal_list = (14, 25, 40, 60, 100, 140)
+        f_value = -1
+        graph_size = (800, 600)
+        y_limit = 500
 
     print(f'データベース名：{db_name}')
     db = Database(db_name)
@@ -27,9 +40,9 @@ if __name__ == '__main__':
         for i, lens_id in enumerate(lens_id_list):
             x_list = [x + bar_plot_width * i for x in range(0, len(focal_list))]
             if mode == 'center':
-                y_list = [db.get_center_score(lens_id, y, -1) for y in focal_list]
+                y_list = [db.get_center_score(lens_id, y, f_value) for y in focal_list]
             else:
-                y_list = [db.get_edge_score(lens_id, y, -1) for y in focal_list]
+                y_list = [db.get_edge_score(lens_id, y, f_value) for y in focal_list]
             data_label = lens_list[lens_id - 1]
             print(x_list)
             print(y_list)
@@ -37,6 +50,10 @@ if __name__ == '__main__':
 
         pyplot.legend(loc=2)
         pyplot.xticks(list(range(0, len(focal_list))), focal_list)
-        pyplot.title(f'{mode} ({db_label})')
-        pyplot.savefig(f'output/{mode}-{db_label}.png')
+        if f_value < 0:
+            title = f'{mode}-F0-{db_label}'
+        else:
+            title = f'{mode}-F{f_value}-{db_label}'
+        pyplot.title(title)
+        pyplot.savefig(f'output/{title}.png')
         pyplot.close()
