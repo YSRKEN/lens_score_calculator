@@ -85,7 +85,7 @@ class Database:
         # 焦点距離が長すぎるものについてはトリミングズームしたとする
         max_focal = max(filtered_df['focal_length'])
         if focal_length > max_focal:
-            return self.get_center_score(lens_id, max_focal, f_value) * max_focal / focal_length
+            return self.get_edge_score(lens_id, max_focal, f_value) * max_focal / focal_length
         # 複数のスコアからの補間で判断する
         x_list = []
         y_list = []
