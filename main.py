@@ -1,25 +1,4 @@
-import sqlite3
-from contextlib import closing
-from typing import Tuple, Optional
-
-import pandas as pandas
-from matplotlib import pyplot
-
-# DBからの取得結果を、グローバル定数として置いておく
-from pandas import DataFrame
-
-with closing(sqlite3.connect('lens_data.db')) as conn:
-    lens_name_df = pandas.read_sql('SELECT * FROM lens_name', con=conn)
-    lens_score_df = pandas.read_sql('SELECT * FROM lens_score', con=conn)
-
-
-def get_lens_name(lens_id: int) -> str:
-    temp = lens_name_df.query(f'id=={lens_id}')
-    if len(temp) == 0:
-        return ''
-    return temp['name'].values[0]
-
-
+"""
 def get_score_by_f(f_value: float, table: DataFrame) -> Optional[Tuple[float, float]]:
     # print(f'【get_score_by_f({f_value})】')
     # f値が負数のものについては、絞り開放での値だと判断する
@@ -149,7 +128,15 @@ def main():
     pyplot.xticks(list(range(0, len(result_df))), x_label)
     pyplot.title('edge (OpticalLimits)')
     pyplot.savefig('output/edge.png')
+"""
+from pprint import pprint
 
+from database import Database
 
 if __name__ == '__main__':
-    main()
+    db1 = Database('lens_data1.db')
+    pprint(db1.get_lens_list())
+    pprint(db1.get_center_score(1, 14, -1))
+    pprint(db1.get_center_score(1, 50, -1))
+    pprint(db1.get_center_score(1, 100, -1))
+    # main()
