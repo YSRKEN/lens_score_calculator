@@ -131,12 +131,59 @@ def main():
 """
 from pprint import pprint
 
+import pandas
+from matplotlib import pyplot
+from pandas import DataFrame
+
 from database import Database
 
 if __name__ == '__main__':
     db1 = Database('lens_data1.db')
-    pprint(db1.get_lens_list())
-    pprint(db1.get_center_score(1, 14, -1))
-    pprint(db1.get_center_score(1, 50, -1))
-    pprint(db1.get_center_score(1, 100, -1))
-    # main()
+    lens_id_list = [1, 2, 3, 4, 5]
+    focal_list = [14, 25, 40, 60, 100, 140]
+    f_value = -1
+
+    plot_width_per = 0.15
+    figsize = [8, 6]
+    ylim = 4000
+
+    result_list = []
+    for fl in focal_list:
+        record = {'focal_length': fl}
+        for lens_id in lens_id_list:
+            record[f'center-{lens_id}'] = db1.get_center_score(lens_id, fl, f_value)
+        for lens_id in lens_id_list:
+            record[f'edge-{lens_id}'] = db1.get_edge_score(lens_id, fl, f_value)
+        result_list.append(record)
+    result_df = DataFrame.from_records(result_list)
+    pandas.options.display.width = 250
+    pandas.options.display.max_columns = None
+    print(result_df)
+
+    pyplot.figure(figsize=figsize)
+    pyplot.ylim([0, ylim])
+    x_label = result_df['focal_length'].T
+    lens_list = db1.get_lens_list()
+    for lens_id in lens_id_list:
+        x_pos = [x + plot_width_per * (lens_id - 1) for x in list(range(0, len(result_df)))]
+        data_label = lens_list[lens_id - 1]
+        pyplot.bar(x_pos, result_df[f'center-{lens_id}'], width=plot_width_per, label=data_label, align="center")
+
+    pyplot.legend(loc=2)
+    pyplot.xticks(list(range(0, len(result_df))), x_label)
+    pyplot.title('center (OpticalLimits)')
+    pyplot.savefig('output/center-.png')
+    pyplot.close()
+
+    pyplot.figure(figsize=figsize)
+    pyplot.ylim([0, ylim])
+    x_label = result_df['focal_length'].T
+    for lens_id in lens_id_list:
+        x_pos = [x + plot_width_per * (lens_id - 1) for x in list(range(0, len(result_df)))]
+        data_label = lens_list[lens_id - 1]
+        pyplot.bar(x_pos, result_df[f'edge-{lens_id}'], width=plot_width_per, label=data_label, align="center")
+
+    pyplot.legend(loc=2)
+    pyplot.xticks(list(range(0, len(result_df))), x_label)
+    pyplot.title('edge (OpticalLimits)')
+    pyplot.savefig('output/edge-.png')

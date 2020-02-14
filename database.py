@@ -72,3 +72,29 @@ class Database:
         if len(x_list) == 0:
             return 0.0
         return Database.predict(focal_length, numpy.array(x_list), numpy.array(y_list))
+
+    def get_edge_score(self, lens_id: int, focal_length: int, f_value: float) -> float:
+        print(f'【get_edge_score{(lens_id, focal_length, f_value)}】')
+        # DBに存在しないレンズについては計算不可とする
+        filtered_df = self.lens_score_df.query(f'lens_id=={lens_id}')
+        if len(filtered_df) == 0:
+            return 0.0
+        # 焦点距離が短すぎるものについては計算不可とする
+        if focal_length < min(filtered_df['focal_length']):
+            return 0.0
+        # 焦点距離が長すぎるものについてはトリミングズームしたとする
+        max_focal = max(filtered_df['focal_length'])
+        if focal_length > max_focal:
+            return self.get_center_score(lens_id, max_focal, f_value) * max_focal / focal_length
+        # 複数のスコアからの補間で判断する
+        x_list = []
+        y_list = []
+        for x in set(filtered_df['focal_length'].values):
+            temp = filtered_df.query(f'focal_length=={x}')
+            score = Database.get_score_by_f_value(f_value, temp['f_value'].values, temp['edge_score'].values)
+            if score > 0.0:
+                x_list.append(x)
+                y_list.append(score)
+        if len(x_list) == 0:
+            return 0.0
+        return Database.predict(focal_length, numpy.array(x_list), numpy.array(y_list))
