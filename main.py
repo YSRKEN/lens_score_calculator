@@ -119,7 +119,7 @@ def main():
             record[f'edge-{lens_id}'] = get_score(lens_id, fl, f_value)[1]
         result_list.append(record)
     result_df = DataFrame.from_records(result_list)
-    pandas.options.display.width = 150
+    pandas.options.display.width = 250
     pandas.options.display.max_columns = None
     print(result_df)
 
