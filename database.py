@@ -30,12 +30,15 @@ class Database:
         temp = df.to_dict(orient='records')
         temp.append({'x': x, 'y': None})
         df = DataFrame.from_records(temp).sort_values('x').set_index('x')
+        """
         if len(df) > 4:
             df.interpolate(method='spline', limit_direction='both', order=3, inplace=True)
         elif len(df) > 3:
             df.interpolate(method='spline', limit_direction='both', order=2, inplace=True)
         else:
             df.interpolate(method='index', inplace=True)
+        """
+        df.interpolate(method='index', inplace=True)
         temp = df.query(f'x=={x}')
         return temp['y'].values[0]
 
@@ -98,3 +101,7 @@ class Database:
         if len(x_list) == 0:
             return 0.0
         return Database.predict(focal_length, numpy.array(x_list), numpy.array(y_list))
+
+    def get_just_focal_list(self, lens_id: int) -> List[int]:
+        temp = list(set(self.lens_score_df.query(f'lens_id=={lens_id}')['focal_length'].values))
+        return sorted(temp)
