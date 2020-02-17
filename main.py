@@ -6,7 +6,7 @@ def test1():
     # OpticalLimits基準→2000がBetter、2500がGood、3000が限界っぽい
     # ePhotozine基準→154がFair、230がGood、306がExcellent
 
-    mode = 'ePhotozine'
+    mode = 'OpticalLimits'
     if mode == 'OpticalLimits':
         db_name = 'lens_data1.db'
         db_label = 'OpticalLimits'
@@ -105,6 +105,7 @@ def test2():
             for f in db.get_just_focal_list(lens_id):
                 pyplot.plot(f, func(f), marker='o', c=lens_color[i])
         pyplot.legend(loc=2)
+        pyplot.xscale('log')
         if f_value < 0:
             title = f'{mode}-F0-{db_label}'
         else:
