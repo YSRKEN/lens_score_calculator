@@ -64,7 +64,7 @@ def get_lens_score(lens_id: str, data_type: str, f_value_type: str):
                            f' lens_id={lens_id} AND f_value <= {f_value_type} GROUP BY focal_length')
             for record in cursor.fetchall():
                 score_list.append({
-                    'focal_length': record[0],
+                    'focal': record[0],
                     'score': record[1]
                 })
         return jsonify(score_list)
@@ -77,7 +77,7 @@ def get_lens_score(lens_id: str, data_type: str, f_value_type: str):
                            f' lens_id={lens_id} GROUP BY focal_length')
             for record in cursor.fetchall():
                 score_list.append({
-                    'focal_length': record[0],
+                    'focal': record[0],
                     'score': record[2]
                 })
         return jsonify(score_list)
@@ -90,7 +90,7 @@ def get_lens_score(lens_id: str, data_type: str, f_value_type: str):
                            f' lens_id={lens_id} GROUP BY focal_length')
             for record in cursor.fetchall():
                 score_list.append({
-                    'focal_length': record[0],
+                    'focal': record[0],
                     'score': record[1]
                 })
         return jsonify(score_list)
