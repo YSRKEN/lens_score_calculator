@@ -1,0 +1,11 @@
+{
+  "dependencies": {
+    "@types/bootstrap": "^4.3.1",
+    "@types/chart.js": "^2.9.14",
+    "@types/react-bootstrap": "^0.32.20",
+    "bootstrap": "^4.4.1",
+    "chart.js": "^2.9.3",
+    "react-bootstrap": "^1.0.0-beta.16",
+    "react-chartjs-2": "^2.9.0"
+  }
+}
