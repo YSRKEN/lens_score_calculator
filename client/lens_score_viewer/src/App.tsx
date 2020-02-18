@@ -1,27 +1,48 @@
-import React, { useEffect } from 'react';
-import { Container, Row, Col, Form, FormControl } from 'react-bootstrap';
+import React, { useState, useEffect, FormEvent } from 'react';
+import { Container, Row, Col, Form } from 'react-bootstrap';
 import { Scatter } from 'react-chartjs-2';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'App.css';
 
+const SERVER_URL = window.location.port === '3000'
+  ? 'http://127.0.0.1:5000'
+  : `${window.location.protocol}://${window.location.hostname}:${window.location.port}`;
+
 function App() {
+  const [lensList, setLensList] = useState<{'id': number, 'name': string, 'device': string}[]>([]);
+  const [selectedLensIdList, setSelectedLensIdList] = useState<number[]>([]);
+  
+  useEffect(() => {
+    fetch(`${SERVER_URL}/api/lenses`).then(res => res.json()).then(res => setLensList(res));
+  }, []);
+
+  useEffect(()=>{
+    console.log(selectedLensIdList);
+  }, [selectedLensIdList]);
+
+  const onSelectLenses = (e: FormEvent<HTMLSelectElement>) => {
+    const temp: number[] = [];
+    for (let i = 0; i < e.currentTarget.options.length; i += 1) {
+      if (e.currentTarget.options[i].selected) {
+        temp.push(lensList[i].id);
+      }
+    }
+    setSelectedLensIdList(temp);
+  };
+
   return (
     <Container>
       <Row>
-        <Col sm={3}>
+        <Col sm={6}>
           <Form className="my-3">
             <Form.Group controlId="lensList">
               <Form.Label>レンズを選択</Form.Label>
-              <select multiple className="form-control" size={10}>
-                <option>sample-1</option>
-                <option>sample-2</option>
-                <option>sample-3</option>
-                <option>sample-4</option>
-                <option>sample-5</option>
-                <option>sample-6</option>
-                <option>sample-7</option>
-                <option>sample-8</option>
-                <option>sample-9</option>
+              <select multiple className="form-control" size={10} onChange={onSelectLenses}>
+                {
+                  lensList.map(record => {
+                    return <option key={record.id}>{record.name}</option>
+                  })
+                }
               </select>
             </Form.Group>
           </Form>
