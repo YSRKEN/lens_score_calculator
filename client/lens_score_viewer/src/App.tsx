@@ -10,26 +10,28 @@ const SERVER_URL = window.location.port === '3000'
 
 const LINE_COLORS = [
   '#FF4B00',
-	'#FFF100',
-	'#03AF7A',
-	'#005AFF',
-	'#4DC4FF',
-	'#FF8082',
-	'#F6AA00',
-	'#990099',
-	'#804000',
+  '#FFF100',
+  '#03AF7A',
+  '#005AFF',
+  '#4DC4FF',
+  '#FF8082',
+  '#F6AA00',
+  '#990099',
+  '#804000',
 ];
 
 function App() {
-  const [lensList, setLensList] = useState<{'id': number, 'name': string, 'device': string}[]>([]);
+  const [lensList, setLensList] = useState<{ 'id': number, 'name': string, 'device': string }[]>([]);
   const [selectedLensIdList, setSelectedLensIdList] = useState<number[]>([]);
   const [chartData, setChartData] = useState<ChartData<Chart.ChartData>>({ datasets: [] });
+  const [dataType, setDataType] = useState('center');
+  const [fValue, setFValue] = useState('-1');
 
   useEffect(() => {
     fetch(`${SERVER_URL}/api/lenses`).then(res => res.json()).then(res => setLensList(res));
   }, []);
 
-  useEffect(()=>{
+  useEffect(() => {
     const init = async () => {
       const temp: ChartData<Chart.ChartData> = { datasets: [] };
       let index = 0;
@@ -39,14 +41,14 @@ function App() {
           label: lensName,
           fill: false,
           borderWidth: 2,
-          borderColor: LINE_COLORS[index],
-          pointBorderColor: LINE_COLORS[index],
-          pointBackgroundColor: LINE_COLORS[index],
+          borderColor: LINE_COLORS[index % LINE_COLORS.length],
+          pointBorderColor: LINE_COLORS[index % LINE_COLORS.length],
+          pointBackgroundColor: LINE_COLORS[index % LINE_COLORS.length],
           showLine: true,
           pointRadius: 3,
           data: []
         };
-        const score: {'focal': number, 'score': number}[] = await (await fetch(`${SERVER_URL}/api/lenses/${lensId}/center/-1`)).json();
+        const score: { 'focal': number, 'score': number }[] = await (await fetch(`${SERVER_URL}/api/lenses/${lensId}/${dataType}/${fValue}`)).json();
         for (const record of score) {
           (temp2.data as Chart.ChartPoint[]).push({ x: record.focal, y: record.score });
         }
@@ -56,7 +58,7 @@ function App() {
       setChartData(temp);
     };
     init();
-  }, [selectedLensIdList]);
+  }, [selectedLensIdList, dataType, fValue]);
 
   const onSelectLenses = (e: FormEvent<HTMLSelectElement>) => {
     const temp: number[] = [];
@@ -67,6 +69,14 @@ function App() {
     }
     setSelectedLensIdList(temp);
   };
+
+  const onChangeDataType = (e: FormEvent<HTMLSelectElement>) => {
+    setDataType(e.currentTarget.value);
+  }
+
+  const onChangeFValue = (e: FormEvent<HTMLSelectElement>) => {
+    setFValue(e.currentTarget.value);
+  }
 
   return (
     <Container>
@@ -83,6 +93,23 @@ function App() {
                 }
               </select>
             </Form.Group>
+            <Form.Group controlId="dataType">
+              <Form.Control as="select" value={dataType} onChange={onChangeDataType}>
+                <option value="center">中央部</option>
+                <option value="edge">周辺</option>
+              </Form.Control>
+            </Form.Group>
+            <Form.Group controlId="dataType">
+              <Form.Control as="select" value={fValue} onChange={onChangeFValue}>
+                <option value="-1">最高値</option>
+                <option value="0">絞り開放</option>
+                <option value="2.8">F2.8</option>
+                <option value="4">F4</option>
+                <option value="5.6">F5.6</option>
+                <option value="8">F8</option>
+                <option value="11">F11</option>
+              </Form.Control>
+            </Form.Group>
           </Form>
         </Col>
         <Col>
@@ -93,8 +120,9 @@ function App() {
                 xAxes: [{ scaleLabel: { display: true, labelString: '焦点距離[mm]' }, }],
                 yAxes: [{ scaleLabel: { display: true, labelString: 'スコア' }, }]
               },
-              showLines: true
-            }} redraw/>
+              showLines: true,
+              animation: {duration: 0}
+            }} redraw />
         </Col>
       </Row>
     </Container>

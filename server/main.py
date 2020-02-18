@@ -47,7 +47,7 @@ def get_lens_score(lens_id: str, data_type: str, f_value_type: str):
     data_type
         "center"なら中央、"edge"なら周辺のスコア
     f_value_type
-        負数なら最大値、0なら絞り解放、それ以外ならその値以下のもののみとする
+        負数なら最大値、0なら絞り解放、それ以外ならその値のもののみとする
 
     Returns
     -------
@@ -56,12 +56,12 @@ def get_lens_score(lens_id: str, data_type: str, f_value_type: str):
 
     f_value_type_float = float(f_value_type)
     if f_value_type_float > 0.0:
-        # 指定した値をF値と見立て、それ以下のものから抽出する
+        # 指定した値をF値と見立て、その値のものから抽出する
         score_list = []
         with closing(sqlite3.connect(DB_PATH)) as connection:
             cursor = connection.cursor()
             cursor.execute(f'SELECT focal_length, MAX({data_type}_score) AS score FROM lens_score WHERE'
-                           f' lens_id={lens_id} AND f_value <= {f_value_type} GROUP BY focal_length')
+                           f' lens_id={lens_id} AND f_value = {f_value_type} GROUP BY focal_length')
             for record in cursor.fetchall():
                 score_list.append({
                     'focal': record[0],
