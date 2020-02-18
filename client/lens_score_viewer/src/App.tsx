@@ -3,6 +3,7 @@ import { Container, Row, Col, Form } from 'react-bootstrap';
 import { Scatter, ChartData } from 'react-chartjs-2';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'App.css';
+import Chart from 'chart.js';
 
 const SERVER_URL = window.location.port === '3000'
   ? 'http://127.0.0.1:5000'
@@ -35,6 +36,13 @@ function App() {
     const init = async () => {
       const temp: ChartData<Chart.ChartData> = { datasets: [] };
       let index = 0;
+      const scoreHash: {[key: number]: { 'focal': number, 'score': number }[]} = {};
+      let maxFocal = 0;
+      for (const lensId of selectedLensIdList) {
+        const temp: { 'focal': number, 'score': number }[] = await (await fetch(`${SERVER_URL}/api/lenses/${lensId}/${dataType}/${fValue}`)).json();
+        scoreHash[lensId] = temp;
+        maxFocal = Math.max(...[maxFocal, ...temp.map(r => r.focal)]);
+      }
       for (const lensId of selectedLensIdList) {
         const lensName = lensList.filter(record => record.id == lensId)[0].name;
         const temp2: Chart.ChartDataSets = {
@@ -48,11 +56,30 @@ function App() {
           pointRadius: 3,
           data: []
         };
-        const score: { 'focal': number, 'score': number }[] = await (await fetch(`${SERVER_URL}/api/lenses/${lensId}/${dataType}/${fValue}`)).json();
+        const score: { 'focal': number, 'score': number }[] = scoreHash[lensId];
         for (const record of score) {
           (temp2.data as Chart.ChartPoint[]).push({ x: record.focal, y: record.score });
         }
         (temp.datasets as Chart.ChartDataSets[]).push(temp2);
+
+        const maxFocal2 = Math.max(...scoreHash[lensId].map(r => r.focal));
+        if (scoreHash[lensId].filter(r => r.focal === maxFocal2).length > 0) {
+          const color = Chart.helpers.color(LINE_COLORS[index % LINE_COLORS.length]).alpha(0.5).rgbString();
+          const temp3: Chart.ChartDataSets = {
+            label: '',
+            fill: false,
+            borderWidth: 2,
+            borderColor: color,
+            showLine: true,
+            pointRadius: 0,
+            data: []
+          };
+          const maxFocalScore = scoreHash[lensId].filter(r => r.focal === maxFocal2)[0].score;
+          for (let i = Math.floor(1.0 * maxFocal2 / 10) * 10; i <= maxFocal; i += 10) {
+            (temp3.data as Chart.ChartPoint[]).push({ x: i, y: 1.0 * maxFocalScore * maxFocal2 / i });
+          }
+          (temp.datasets as Chart.ChartDataSets[]).push(temp3);
+        }
         index += 1;
       }
       setChartData(temp);
@@ -113,16 +140,18 @@ function App() {
           </Form>
         </Col>
         <Col>
-          <Scatter width={450} height={450} data={chartData}
-            options={{
-              elements: { line: { tension: 0 } },
-              scales: {
-                xAxes: [{ scaleLabel: { display: true, labelString: '焦点距離[mm]' }, }],
-                yAxes: [{ scaleLabel: { display: true, labelString: 'スコア' }, }]
-              },
-              showLines: true,
-              animation: {duration: 0}
-            }} redraw />
+          <div className="my-3">
+            <Scatter width={450} height={450} data={chartData}
+              options={{
+                elements: { line: { tension: 0 } },
+                scales: {
+                  xAxes: [{ scaleLabel: { display: true, labelString: '焦点距離[mm]' }, }],
+                  yAxes: [{ scaleLabel: { display: true, labelString: 'スコア[LW/PH]' }, }]
+                },
+                showLines: true,
+                animation: { duration: 0 }
+              }} redraw />
+          </div>
         </Col>
       </Row>
     </Container>
