@@ -75,7 +75,7 @@ function App() {
             data: []
           };
           const maxFocalScore = scoreHash[lensId].filter(r => r.focal === maxFocal2)[0].score;
-          for (let i = Math.floor(1.0 * maxFocal2 / 10) * 10; i <= maxFocal; i += 10) {
+          for (let i = maxFocal2; i <= maxFocal; i += 1) {
             (temp3.data as Chart.ChartPoint[]).push({ x: i, y: 1.0 * maxFocalScore * maxFocal2 / i });
           }
           (temp.datasets as Chart.ChartDataSets[]).push(temp3);
