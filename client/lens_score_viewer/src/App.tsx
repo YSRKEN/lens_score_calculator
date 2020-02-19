@@ -27,6 +27,7 @@ function App() {
   const [chartData, setChartData] = useState<ChartData<Chart.ChartData>>({ datasets: [] });
   const [dataType, setDataType] = useState('center');
   const [fValue, setFValue] = useState('-1');
+  const [inputedLensId, setInputedLensId] = useState(0);
 
   useEffect(() => {
     fetch(`${SERVER_URL}/api/lenses`).then(res => res.json()).then(res => setLensList(res));
@@ -105,6 +106,15 @@ function App() {
     setFValue(e.currentTarget.value);
   }
 
+  const onChangeInputedLensId = (e: FormEvent<HTMLInputElement>) => {
+    const temp = parseInt(e.currentTarget.value, 10);
+    if (!isNaN(temp)) {
+      setInputedLensId(Math.abs(Math.round(temp)));
+    } else {
+      setInputedLensId(0);
+    }
+  }
+
   return (
     <Container>
       <Row>
@@ -152,6 +162,17 @@ function App() {
                 animation: { duration: 0 }
               }} redraw />
           </div>
+        </Col>
+      </Row>
+      <hr style={{borderWidth: 5}}/>
+      <Row>
+        <Col sm={6}>
+        <Form className="my-3">
+            <Form.Group controlId="lensList">
+              <Form.Label>レンズID</Form.Label>
+              <Form.Control value={`${inputedLensId}`} onChange={onChangeInputedLensId}/>
+            </Form.Group>
+          </Form>
         </Col>
       </Row>
     </Container>
