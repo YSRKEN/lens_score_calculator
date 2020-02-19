@@ -44,7 +44,7 @@ function App() {
         maxFocal = Math.max(...[maxFocal, ...temp.map(r => r.focal)]);
       }
       for (const lensId of selectedLensIdList) {
-        const lensName = lensList.filter(record => record.id == lensId)[0].name;
+        const lensName = lensList.filter(record => record.id === lensId)[0].name;
         const temp2: Chart.ChartDataSets = {
           label: lensName,
           fill: false,
@@ -85,7 +85,7 @@ function App() {
       setChartData(temp);
     };
     init();
-  }, [selectedLensIdList, dataType, fValue]);
+  }, [selectedLensIdList, dataType, fValue, lensList]);
 
   const onSelectLenses = (e: FormEvent<HTMLSelectElement>) => {
     const temp: number[] = [];
