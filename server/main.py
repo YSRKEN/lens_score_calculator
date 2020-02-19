@@ -109,7 +109,9 @@ def get_pre_scores_impl(lens_id: str):
 
     title = html.find('td.contentheading', first=True).text\
         .replace(' - Review / Lens Test Report - Analysis', '')\
-        .replace(' - Review / Test Report - Analysis', '')
+        .replace(' - Review / Test Report - Analysis', '')\
+        .replace(' - Review / Lens Test - Analysis', '')\
+        .replace(' Review / Test Report - Analysis', '')
 
     m = re.search(r'loadCharts\((\d+)\);', page.text)
     lens_id_inner = m.group(1)
@@ -126,7 +128,7 @@ def get_pre_scores_impl(lens_id: str):
         else:
             center_data: List[int] = data['mtf_val_center']
             edge_data: List[int] = data['mtf_val_border']
-        f_value_list: List[str] = [x.replace('F/', '').replace('f', '') for x in data['ca_cat']]
+        f_value_list: List[str] = [re.sub('-.*', '', x.replace('F/', '').replace('f/', '').replace('f', '')) for x in data['mtf_cat']]
         for f_value, center_score, edge_score in zip(f_value_list, center_data, edge_data):
             response_json['data'].append({
                 'focal': focal_length,
@@ -174,7 +176,7 @@ def post_lens_score(lens_id: str):
         for record in lens_data['data']:
             record: Dict[str, Union[str, any]] = record
             sql = 'insert into lens_score (lens_id, focal_length, f_value, center_score, edge_score) values (?,?,?,?,?)'
-            lens_name = (int(lens_id), int(record['focal']), float(record['f']), record['center'], record['edge'])
+            lens_name = (int(lens_id), float(record['focal']), float(record['f']), record['center'], record['edge'])
             cursor.execute(sql, lens_name)
         connection.commit()
     return jsonify({})
