@@ -1,5 +1,5 @@
 import React, { useState, useEffect, FormEvent } from 'react';
-import { Container, Row, Col, Form } from 'react-bootstrap';
+import { Container, Row, Col, Form, Button } from 'react-bootstrap';
 import { Scatter, ChartData } from 'react-chartjs-2';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'App.css';
@@ -21,6 +21,63 @@ const LINE_COLORS = [
   '#804000',
 ];
 
+interface BasePreData {
+  result: string;
+}
+
+interface ImagePreData extends BasePreData {
+  type: string;
+  title: string;
+  data: string;
+}
+
+interface TextPreData extends BasePreData {
+  type: string;
+  title: string;
+  data: {
+    center: number,
+    edge: number,
+    f: string,
+    focal: string
+  }[];
+}
+
+const LensForm: React.FC<{
+  inputedLensId: number,
+  lensPreData: BasePreData | ImagePreData | TextPreData,
+  refreshLensList: () => void }> = ({ inputedLensId, lensPreData, refreshLensList }) => {
+  const [device, setDevice] = useState('16mp');
+
+  const sendLensDataText = () => {
+    fetch(`${SERVER_URL}/api/lenses/${inputedLensId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({'device': device})
+    }).then(() => refreshLensList());
+  };
+
+  if (lensPreData.result === 'ng') {
+    return <Form.Label>エラー：当該レンズデータが存在しません</Form.Label>;
+  }
+  const temp = lensPreData as (ImagePreData | TextPreData);
+  if (temp.type === 'text') {
+    return (<>
+      <Form.Group>
+        <Form.Label>レンズデータを取得しました。</Form.Label><br />
+        <Form.Label>レンズ名：{temp.title}</Form.Label><br />
+        <Form.Control as="select" value={device} onChange={e => setDevice(e.currentTarget.value)}>
+          <option value="16mp">16mp</option>
+          <option value="12mp">12mp</option>
+        </Form.Control>
+      </Form.Group>
+      <Button onClick={sendLensDataText}>送信</Button>
+    </>);
+  }
+  return <></>;
+};
+
 function App() {
   const [lensList, setLensList] = useState<{ 'id': number, 'name': string, 'device': string }[]>([]);
   const [selectedLensIdList, setSelectedLensIdList] = useState<number[]>([]);
@@ -28,16 +85,21 @@ function App() {
   const [dataType, setDataType] = useState('center');
   const [fValue, setFValue] = useState('-1');
   const [inputedLensId, setInputedLensId] = useState(0);
+  const [lensPreData, setLensPreData] = useState<BasePreData | ImagePreData | TextPreData>({ result: 'ng' });
 
   useEffect(() => {
-    fetch(`${SERVER_URL}/api/lenses`).then(res => res.json()).then(res => setLensList(res));
+    refreshLensList();
   }, []);
+
+  useEffect(() => {
+    fetch(`${SERVER_URL}/api/lenses/${inputedLensId}/pre`).then(res => res.json()).then(res => setLensPreData(res));
+  }, [inputedLensId]);
 
   useEffect(() => {
     const init = async () => {
       const temp: ChartData<Chart.ChartData> = { datasets: [] };
       let index = 0;
-      const scoreHash: {[key: number]: { 'focal': number, 'score': number }[]} = {};
+      const scoreHash: { [key: number]: { 'focal': number, 'score': number }[] } = {};
       let maxFocal = 0;
       for (const lensId of selectedLensIdList) {
         const temp: { 'focal': number, 'score': number }[] = await (await fetch(`${SERVER_URL}/api/lenses/${lensId}/${dataType}/${fValue}`)).json();
@@ -96,6 +158,10 @@ function App() {
       }
     }
     setSelectedLensIdList(temp);
+  };
+
+  const refreshLensList = () => {
+    fetch(`${SERVER_URL}/api/lenses`).then(res => res.json()).then(res => setLensList(res));
   };
 
   const onChangeDataType = (e: FormEvent<HTMLSelectElement>) => {
@@ -164,14 +230,15 @@ function App() {
           </div>
         </Col>
       </Row>
-      <hr style={{borderWidth: 5}}/>
+      <hr style={{ borderWidth: 5 }} />
       <Row>
         <Col sm={6}>
-        <Form className="my-3">
+          <Form className="my-3">
             <Form.Group controlId="lensList">
               <Form.Label>レンズID</Form.Label>
-              <Form.Control value={`${inputedLensId}`} onChange={onChangeInputedLensId}/>
+              <Form.Control value={`${inputedLensId}`} onChange={onChangeInputedLensId} />
             </Form.Group>
+            <LensForm inputedLensId={inputedLensId} lensPreData={lensPreData} refreshLensList={refreshLensList}/>
           </Form>
         </Col>
       </Row>

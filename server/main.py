@@ -4,9 +4,9 @@ import re
 import sqlite3
 from contextlib import closing
 from pprint import pprint
-from typing import List, Dict
+from typing import List, Dict, Union
 
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 from requests_html import HTMLSession, HTML, Element
 
@@ -103,31 +103,21 @@ def get_lens_score(lens_id: str, data_type: str, f_value_type: str):
         return jsonify(score_list)
 
 
-@app.route('/api/lenses/<lens_id>/pre')
-def get_pre_scores(lens_id: str):
-
+def get_pre_scores_impl(lens_id: str):
     page = session.get(f'https://www.opticallimits.com/m43/{lens_id}?start=1')
-    if not page.ok:
-        return jsonify({'result': 'ng'})
-    with open('temp.html', 'w', encoding='utf-8') as f:
-        f.write(page.text)
     html: HTML = page.html
 
-    img_list: List[Element] = html.find('img')
-    for img_tag in img_list:
-        url = 'https://www.opticallimits.com' + img_tag.attrs['src']
-        if 'mtf.png' in url:
-            return jsonify({'result': 'ok', 'type': 'image', 'data': url})
+    title = html.find('td.contentheading', first=True).text\
+        .replace(' - Review / Lens Test Report - Analysis', '')\
+        .replace(' - Review / Test Report - Analysis', '')
 
     m = re.search(r'loadCharts\((\d+)\);', page.text)
     lens_id_inner = m.group(1)
     page2 = session.post(f'https://www.opticallimits.com/js/php/get_data.php', data={
         'lens_id': lens_id_inner
     })
-    if not page2.ok:
-        return jsonify({'result': 'ng'})
     resp: Dict[str, any] = json.loads(page2.text.encode().decode('utf-8-sig'))
-    responst_json = ({'result': 'ok', 'type': 'text', 'data': []})
+    response_json = ({'result': 'ok', 'type': 'text', 'title': title, 'data': []})
     for focal_length, data in resp.items():
         data: Dict[str, List[any]] = data
         if 'mtf_val_extreme' in data:
@@ -136,16 +126,58 @@ def get_pre_scores(lens_id: str):
         else:
             center_data: List[int] = data['mtf_val_center']
             edge_data: List[int] = data['mtf_val_border']
-        f_value_list: List[str] = [x.replace('F/', '') for x in data['ca_cat']]
+        f_value_list: List[str] = [x.replace('F/', '').replace('f', '') for x in data['ca_cat']]
         for f_value, center_score, edge_score in zip(f_value_list, center_data, edge_data):
-            responst_json['data'].append({
+            response_json['data'].append({
                 'focal': focal_length,
                 'f': f_value,
                 'center': center_score,
                 'edge': edge_score
             })
+    return response_json
 
-    return jsonify(responst_json)
+
+@app.route('/api/lenses/<lens_id>/pre')
+def get_pre_scores(lens_id: str):
+
+    page = session.get(f'https://www.opticallimits.com/m43/{lens_id}?start=1')
+    if not page.ok:
+        return jsonify({'result': 'ng'})
+    html: HTML = page.html
+
+    title = html.find('td.contentheading', first=True).text\
+        .replace(' - Review / Lens Test Report - Analysis', '')\
+        .replace(' - Review / Test Report - Analysis', '')
+
+    img_list: List[Element] = html.find('img')
+    for img_tag in img_list:
+        url = 'https://www.opticallimits.com' + img_tag.attrs['src']
+        if 'mtf.png' in url:
+            return jsonify({'result': 'ok', 'type': 'image', 'title': title, 'data': url})
+
+    response_json = get_pre_scores_impl(lens_id)
+
+    return jsonify(response_json)
+
+
+@app.route('/api/lenses/<lens_id>', methods=['POST'])
+def post_lens_score(lens_id: str):
+    lens_data = get_pre_scores_impl(lens_id)
+    post_data = request.json
+    print(lens_data)
+    print(post_data)
+    with closing(sqlite3.connect(DB_PATH)) as connection:
+        cursor = connection.cursor()
+        sql = 'insert into lens_name (id, name, device) values (?,?,?)'
+        lens_name = (int(lens_id), lens_data['title'], post_data['device'])
+        cursor.execute(sql, lens_name)
+        for record in lens_data['data']:
+            record: Dict[str, Union[str, any]] = record
+            sql = 'insert into lens_score (lens_id, focal_length, f_value, center_score, edge_score) values (?,?,?,?,?)'
+            lens_name = (int(lens_id), int(record['focal']), float(record['f']), record['center'], record['edge'])
+            cursor.execute(sql, lens_name)
+        connection.commit()
+    return jsonify({})
 
 
 if __name__ == '__main__':
