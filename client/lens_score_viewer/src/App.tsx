@@ -206,7 +206,9 @@ function App() {
         for (const record of score) {
           (temp2.data as Chart.ChartPoint[]).push({ x: record.focal, y: record.score });
         }
-        (temp.datasets as Chart.ChartDataSets[]).push(temp2);
+        if ((temp2.data as Chart.ChartPoint[]).length > 0) {
+          (temp.datasets as Chart.ChartDataSets[]).push(temp2);
+        }
 
         const maxFocal2 = Math.max(...scoreHash[lensId].map(r => r.focal));
         if (scoreHash[lensId].filter(r => r.focal === maxFocal2).length > 0) {
@@ -224,7 +226,9 @@ function App() {
           for (let i = maxFocal2; i <= maxFocal; i += 1) {
             (temp3.data as Chart.ChartPoint[]).push({ x: i, y: 1.0 * maxFocalScore * maxFocal2 / i });
           }
-          (temp.datasets as Chart.ChartDataSets[]).push(temp3);
+          if ((temp3.data as Chart.ChartPoint[]).length > 0) {
+            (temp.datasets as Chart.ChartDataSets[]).push(temp3);
+          }
         }
         index += 1;
       }
@@ -265,9 +269,9 @@ function App() {
   }
 
   return (
-    <Container>
+    <Container fluid>
       <Row>
-        <Col sm={6}>
+        <Col>
           <Form className="my-3">
             <Form.Group controlId="lensList">
               <Form.Label>レンズを選択</Form.Label>
@@ -289,6 +293,9 @@ function App() {
               <Form.Control as="select" value={fValue} onChange={onChangeFValue}>
                 <option value="-1">最高値</option>
                 <option value="0">絞り開放</option>
+                <option value="1">F1</option>
+                <option value="1.4">F1.4</option>
+                <option value="2">F2</option>
                 <option value="2.8">F2.8</option>
                 <option value="4">F4</option>
                 <option value="5.6">F5.6</option>

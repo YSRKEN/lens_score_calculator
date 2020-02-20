@@ -68,7 +68,7 @@ def get_lens_score(lens_id: str, data_type: str, f_value_type: str):
         with closing(sqlite3.connect(DB_PATH)) as connection:
             cursor = connection.cursor()
             cursor.execute(f'SELECT focal_length, MAX({data_type}_score) AS score FROM lens_score WHERE'
-                           f' lens_id={lens_id} AND f_value = {f_value_type} GROUP BY focal_length')
+                           f' lens_id={lens_id} AND f_value <= {f_value_type} GROUP BY focal_length')
             for record in cursor.fetchall():
                 score_list.append({
                     'focal': record[0],
