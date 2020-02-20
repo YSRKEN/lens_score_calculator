@@ -19,6 +19,13 @@ const LINE_COLORS = [
   '#F6AA00',
   '#990099',
   '#804000',
+  '#ffcabf',
+  '#ffff80',
+  '#d8f255',
+  '#bfe4ff',
+  '#ffca80',
+  '#77d9a8',
+  '#c9ace6',
 ];
 
 interface BasePreData {
@@ -169,6 +176,7 @@ function App() {
   const [fValue, setFValue] = useState('-1');
   const [inputedLensId, setInputedLensId] = useState(0);
   const [lensPreData, setLensPreData] = useState<BasePreData | ImagePreData | TextPreData>({ result: 'ng' });
+  const [focalType, setFocalType] = useState('all');
 
   useEffect(() => {
     refreshLensList();
@@ -203,6 +211,16 @@ function App() {
           data: []
         };
         const score: { 'focal': number, 'score': number }[] = scoreHash[lensId];
+        if (focalType !== 'all') {
+          const minFocal1 = parseInt(focalType.split('-')[0], 10);
+          const maxFocal1 = parseInt(focalType.split('-')[1], 10);
+          const minFocal2 = Math.min(...score.map(r => r.focal));
+          const maxFocal2 = Math.max(...score.map(r => r.focal));
+          if (maxFocal2 < minFocal1 || maxFocal1 < minFocal2) {
+            index += 1;
+            continue;
+          }
+        }
         for (const record of score) {
           (temp2.data as Chart.ChartPoint[]).push({ x: record.focal, y: record.score });
         }
@@ -211,7 +229,7 @@ function App() {
         }
 
         const maxFocal2 = Math.max(...scoreHash[lensId].map(r => r.focal));
-        if (scoreHash[lensId].filter(r => r.focal === maxFocal2).length > 0) {
+        if (scoreHash[lensId].filter(r => r.focal === maxFocal2).length > 0 && focalType === 'all') {
           const color = Chart.helpers.color(LINE_COLORS[index % LINE_COLORS.length]).alpha(0.5).rgbString();
           const temp3: Chart.ChartDataSets = {
             label: '',
@@ -226,9 +244,7 @@ function App() {
           for (let i = maxFocal2; i <= maxFocal; i += 1) {
             (temp3.data as Chart.ChartPoint[]).push({ x: i, y: 1.0 * maxFocalScore * maxFocal2 / i });
           }
-          if ((temp3.data as Chart.ChartPoint[]).length > 0) {
-            (temp.datasets as Chart.ChartDataSets[]).push(temp3);
-          }
+          (temp.datasets as Chart.ChartDataSets[]).push(temp3);
         }
         index += 1;
       }
@@ -259,6 +275,10 @@ function App() {
     setFValue(e.currentTarget.value);
   }
 
+  const onChangeFocalType = (e: FormEvent<HTMLSelectElement>) => {
+    setFocalType(e.currentTarget.value);
+  };
+
   const onChangeInputedLensId = (e: FormEvent<HTMLInputElement>) => {
     const temp = parseInt(e.currentTarget.value, 10);
     if (!isNaN(temp)) {
@@ -267,6 +287,27 @@ function App() {
       setInputedLensId(0);
     }
   }
+
+  const graphOption = () => {
+    const temp = {
+      elements: { line: { tension: 0 } },
+      scales: {
+        xAxes: [{
+          scaleLabel: { display: true, labelString: '焦点距離[mm]' },
+        }],
+        yAxes: [{ scaleLabel: { display: true, labelString: 'スコア[LW/PH]' }, }]
+      },
+      showLines: true,
+      animation: { duration: 0 },
+    };
+    if (focalType !== 'all') {
+      (temp.scales.xAxes[0] as {[key: string]: any})['ticks'] = {
+        min: parseInt(focalType.split('-')[0], 10),
+        max: parseInt(focalType.split('-')[1], 10),
+      }
+    }
+    return temp;
+  };
 
   return (
     <Container fluid>
@@ -303,20 +344,21 @@ function App() {
                 <option value="11">F11</option>
               </Form.Control>
             </Form.Group>
+            <Form.Group controlId="focalType">
+              <Form.Control as="select" value={focalType} onChange={onChangeFocalType}>
+                <option value="all">全体</option>
+                <option value="0-14">広角</option>
+                <option value="12-40">標準</option>
+                <option value="40-150">望遠</option>
+                <option value="100-400">超望遠</option>
+              </Form.Control>
+            </Form.Group>
           </Form>
         </Col>
         <Col>
           <div className="my-3">
             <Scatter width={450} height={450} data={chartData}
-              options={{
-                elements: { line: { tension: 0 } },
-                scales: {
-                  xAxes: [{ scaleLabel: { display: true, labelString: '焦点距離[mm]' }, }],
-                  yAxes: [{ scaleLabel: { display: true, labelString: 'スコア[LW/PH]' }, }]
-                },
-                showLines: true,
-                animation: { duration: 0 }
-              }} redraw />
+              options={graphOption()} redraw />
           </div>
         </Col>
       </Row>
