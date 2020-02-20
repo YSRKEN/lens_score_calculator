@@ -1,5 +1,5 @@
 import React, { useState, useEffect, FormEvent } from 'react';
-import { Container, Row, Col, Form, Button } from 'react-bootstrap';
+import { Container, Row, Col, Form, Button, Table } from 'react-bootstrap';
 import { Scatter, ChartData } from 'react-chartjs-2';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'App.css';
@@ -45,8 +45,14 @@ interface TextPreData extends BasePreData {
 const LensForm: React.FC<{
   inputedLensId: number,
   lensPreData: BasePreData | ImagePreData | TextPreData,
-  refreshLensList: () => void }> = ({ inputedLensId, lensPreData, refreshLensList }) => {
+  refreshLensList: () => void
+}> = ({ inputedLensId, lensPreData, refreshLensList }) => {
   const [device, setDevice] = useState('16mp');
+  const [recordList, setRecordList] = useState<{ focal: number, f: number, center: number, edge: number }[]>([]);
+
+  useEffect(() => {
+    setRecordList([]);
+  }, [inputedLensId]);
 
   const sendLensDataText = () => {
     fetch(`${SERVER_URL}/api/lenses/${inputedLensId}`, {
@@ -54,8 +60,16 @@ const LensForm: React.FC<{
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({'device': device})
+      body: JSON.stringify({ 'device': device })
     }).then(() => refreshLensList());
+  };
+
+  const sendLensDataImage = () => {
+
+  };
+
+  const addRecord = () => {
+    setRecordList([...recordList, { focal: 0, f: 0, center: 0, edge: 0 }]);
   };
 
   if (lensPreData.result === 'ng') {
@@ -74,6 +88,45 @@ const LensForm: React.FC<{
       </Form.Group>
       <Button onClick={sendLensDataText}>送信</Button>
     </>);
+  } else {
+    const temp2 = temp as ImagePreData;
+    return (<>
+      <Form.Group>
+        <Form.Label>レンズデータを取得しました。</Form.Label><br />
+        <Form.Label>レンズ名：{temp2.title}</Form.Label><br />
+        <Row>
+          <Col>
+            <Table striped bordered hover>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>焦点距離</th>
+                  <th>F値</th>
+                  <th>中央部</th>
+                  <th>周辺部</th>
+                </tr>
+              </thead>
+              <tbody>
+                {
+                  recordList.map((record, index) => {
+                    return <tr key={index}>
+                      <td>{index+1}</td>
+                      <td><Form.Control defaultValue={record.focal} /></td>
+                      <td><Form.Control defaultValue={record.f} /></td>
+                      <td><Form.Control defaultValue={record.center} /></td>
+                      <td><Form.Control defaultValue={record.edge} /></td>
+                    </tr>;
+                  })
+                }
+              </tbody>
+            </Table>
+            <Button onClick={addRecord} variant="secondary">項目を追加</Button>
+          </Col>
+          <Col><img src={temp2.data} /></Col>
+        </Row>
+      </Form.Group>
+      <Button onClick={sendLensDataImage}>送信</Button>
+    </>);
   }
   return <></>;
 };
@@ -84,7 +137,7 @@ function App() {
   const [chartData, setChartData] = useState<ChartData<Chart.ChartData>>({ datasets: [] });
   const [dataType, setDataType] = useState('center');
   const [fValue, setFValue] = useState('-1');
-  const [inputedLensId, setInputedLensId] = useState(0);
+  const [inputedLensId, setInputedLensId] = useState(873);
   const [lensPreData, setLensPreData] = useState<BasePreData | ImagePreData | TextPreData>({ result: 'ng' });
 
   useEffect(() => {
@@ -161,7 +214,7 @@ function App() {
   };
 
   const refreshLensList = () => {
-    fetch(`${SERVER_URL}/api/lenses`).then(res => res.json()).then(res => setLensList(res));
+    fetch(`${SERVER_URL}/api/lenses`).then(res => res.json()).then(res => {setLensList(res); setInputedLensId(0);});
   };
 
   const onChangeDataType = (e: FormEvent<HTMLSelectElement>) => {
@@ -232,13 +285,13 @@ function App() {
       </Row>
       <hr style={{ borderWidth: 5 }} />
       <Row>
-        <Col sm={6}>
+        <Col>
           <Form className="my-3">
             <Form.Group controlId="lensList">
               <Form.Label>レンズID</Form.Label>
               <Form.Control value={`${inputedLensId}`} onChange={onChangeInputedLensId} />
             </Form.Group>
-            <LensForm inputedLensId={inputedLensId} lensPreData={lensPreData} refreshLensList={refreshLensList}/>
+            <LensForm inputedLensId={inputedLensId} lensPreData={lensPreData} refreshLensList={refreshLensList} />
           </Form>
         </Col>
       </Row>
