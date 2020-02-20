@@ -121,7 +121,7 @@ const LensForm: React.FC<{
           <option value="12mp">12mp</option>
         </Form.Control>
         <Row className="mt-3">
-          <Col>
+          <Col xs={6}>
             <Table striped bordered hover>
               <thead>
                 <tr>
@@ -152,7 +152,7 @@ const LensForm: React.FC<{
             </Table>
             <Button onClick={addRecord} variant="secondary">項目を追加</Button>
           </Col>
-          <Col><img src={temp2.data} /></Col>
+          <Col xs={6}><img src={temp2.data} /></Col>
         </Row>
       </Form.Group>
       <Button onClick={sendLensDataImage}>送信</Button>
