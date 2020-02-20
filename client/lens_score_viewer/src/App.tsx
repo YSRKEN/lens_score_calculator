@@ -57,6 +57,7 @@ const LensForm: React.FC<{
   const sendLensDataText = () => {
     fetch(`${SERVER_URL}/api/lenses/${inputedLensId}`, {
       method: 'POST',
+      mode: "cors",
       headers: {
         'Content-Type': 'application/json'
       },
@@ -65,11 +66,32 @@ const LensForm: React.FC<{
   };
 
   const sendLensDataImage = () => {
-
+    fetch(`${SERVER_URL}/api/lenses/${inputedLensId}`, {
+      method: 'POST',
+      mode: "cors",
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ 'device': device, 'data': recordList })
+    }).then(() => refreshLensList());
   };
 
   const addRecord = () => {
     setRecordList([...recordList, { focal: 0, f: 0, center: 0, edge: 0 }]);
+  };
+
+  const editRecord = (index: number, type: string, value: number) => {
+    const temp: { focal: number, f: number, center: number, edge: number }[] = [];
+    for (let i = 0; i < recordList.length; i += 1) {
+      if (index === i) {
+        const temp2: {[key: string]: any} = {...recordList[i]};
+        temp2[type] = value;
+        temp.push(temp2 as { focal: number, f: number, center: number, edge: number });
+      } else {
+        temp.push({...recordList[i]});
+      }
+    }
+    setRecordList(temp);
   };
 
   if (lensPreData.result === 'ng') {
@@ -81,7 +103,7 @@ const LensForm: React.FC<{
       <Form.Group>
         <Form.Label>レンズデータを取得しました。</Form.Label><br />
         <Form.Label>レンズ名：{temp.title}</Form.Label><br />
-        <Form.Control as="select" value={device} onChange={e => setDevice(e.currentTarget.value)}>
+        <Form.Control as="select" value={device} onChange={(e: any) => setDevice(e.currentTarget.value)}>
           <option value="16mp">16mp</option>
           <option value="12mp">12mp</option>
         </Form.Control>
@@ -94,7 +116,11 @@ const LensForm: React.FC<{
       <Form.Group>
         <Form.Label>レンズデータを取得しました。</Form.Label><br />
         <Form.Label>レンズ名：{temp2.title}</Form.Label><br />
-        <Row>
+        <Form.Control as="select" value={device} onChange={(e: any) => setDevice(e.currentTarget.value)}>
+          <option value="16mp">16mp</option>
+          <option value="12mp">12mp</option>
+        </Form.Control>
+        <Row className="mt-3">
           <Col>
             <Table striped bordered hover>
               <thead>
@@ -111,10 +137,14 @@ const LensForm: React.FC<{
                   recordList.map((record, index) => {
                     return <tr key={index}>
                       <td>{index+1}</td>
-                      <td><Form.Control defaultValue={record.focal} /></td>
-                      <td><Form.Control defaultValue={record.f} /></td>
-                      <td><Form.Control defaultValue={record.center} /></td>
-                      <td><Form.Control defaultValue={record.edge} /></td>
+                      <td><Form.Control value={'' + record.focal}
+                        onChange={(e: any) => editRecord(index, 'focal', parseFloat(e.currentTarget.value))}/></td>
+                      <td><Form.Control value={'' + record.f}
+                        onChange={(e: any) => editRecord(index, 'f', parseFloat(e.currentTarget.value))}/></td>
+                      <td><Form.Control value={'' + record.center}
+                        onChange={(e: any) => editRecord(index, 'center', parseFloat(e.currentTarget.value))}/></td>
+                      <td><Form.Control value={'' + record.edge}
+                        onChange={(e: any) => editRecord(index, 'edge', parseFloat(e.currentTarget.value))}/></td>
                     </tr>;
                   })
                 }
@@ -137,7 +167,7 @@ function App() {
   const [chartData, setChartData] = useState<ChartData<Chart.ChartData>>({ datasets: [] });
   const [dataType, setDataType] = useState('center');
   const [fValue, setFValue] = useState('-1');
-  const [inputedLensId, setInputedLensId] = useState(873);
+  const [inputedLensId, setInputedLensId] = useState(0);
   const [lensPreData, setLensPreData] = useState<BasePreData | ImagePreData | TextPreData>({ result: 'ng' });
 
   useEffect(() => {

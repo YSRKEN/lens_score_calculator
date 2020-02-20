@@ -114,6 +114,8 @@ def get_pre_scores_impl(lens_id: str):
         .replace(' Review / Test Report - Analysis', '')
 
     m = re.search(r'loadCharts\((\d+)\);', page.text)
+    if m is None:
+        return {'result': 'ok', 'type': 'image', 'title': title, 'data': []}
     lens_id_inner = m.group(1)
     page2 = session.post(f'https://www.opticallimits.com/js/php/get_data.php', data={
         'lens_id': lens_id_inner
@@ -165,18 +167,32 @@ def get_pre_scores(lens_id: str):
 @app.route('/api/lenses/<lens_id>', methods=['POST'])
 def post_lens_score(lens_id: str):
     lens_data = get_pre_scores_impl(lens_id)
+    lens_id_int = int(lens_id)
+    lens_name = lens_data['title']
     post_data = request.json
+    lens_device = post_data['device']
+
+    if 'data' in post_data:
+        record_data = post_data['data']
+    else:
+        record_data = [{
+            'focal': float(x['focal']),
+            'f': float(x['f']),
+            'center': x['center'],
+            'edge': x['edge'],
+        } for x in lens_data['data']]
+
     print(lens_data)
     print(post_data)
     with closing(sqlite3.connect(DB_PATH)) as connection:
         cursor = connection.cursor()
         sql = 'insert into lens_name (id, name, device) values (?,?,?)'
-        lens_name = (int(lens_id), lens_data['title'], post_data['device'])
+        lens_name = (lens_id_int, lens_name, lens_device)
         cursor.execute(sql, lens_name)
-        for record in lens_data['data']:
+        for record in record_data:
             record: Dict[str, Union[str, any]] = record
             sql = 'insert into lens_score (lens_id, focal_length, f_value, center_score, edge_score) values (?,?,?,?,?)'
-            lens_name = (int(lens_id), float(record['focal']), float(record['f']), record['center'], record['edge'])
+            lens_name = (lens_id_int, record['focal'], record['f'], record['center'], record['edge'])
             cursor.execute(sql, lens_name)
         connection.commit()
     return jsonify({})
