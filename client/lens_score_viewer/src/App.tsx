@@ -178,6 +178,8 @@ function App() {
   const [lensPreData, setLensPreData] = useState<BasePreData | ImagePreData | TextPreData>({ result: 'ng' });
   const [focalMin, setFocalMin] = useState(-1);
   const [focalMax, setFocalMax] = useState(-1);
+  const [trimmingZoomFlg, setTrimmingZoomFlg] = useState(true);
+  const [singleFocalFlg, setSingleFocalFlg] = useState(true);
 
   useEffect(() => {
     refreshLensList();
@@ -220,6 +222,10 @@ function App() {
           index += 1;
           continue;
         }
+        if (!singleFocalFlg && Math.min(...score.map(r => r.focal)) === Math.max(...score.map(r => r.focal))) {
+          index += 1;
+          continue;
+        }
         for (const record of score) {
           (temp2.data as Chart.ChartPoint[]).push({ x: record.focal, y: record.score });
         }
@@ -228,7 +234,7 @@ function App() {
         }
 
         const maxFocal2 = Math.max(...scoreHash[lensId].map(r => r.focal));
-        if (scoreHash[lensId].filter(r => r.focal === maxFocal2).length > 0) {
+        if (scoreHash[lensId].filter(r => r.focal === maxFocal2).length > 0 && trimmingZoomFlg) {
           const color = Chart.helpers.color(LINE_COLORS[index % LINE_COLORS.length]).alpha(0.5).rgbString();
           const temp3: Chart.ChartDataSets = {
             label: '',
@@ -250,7 +256,7 @@ function App() {
       setChartData(temp);
     };
     init();
-  }, [selectedLensIdList, dataType, fValue, lensList]);
+  }, [selectedLensIdList, dataType, fValue, lensList, trimmingZoomFlg, singleFocalFlg]);
 
   const onSelectLenses = (e: FormEvent<HTMLSelectElement>) => {
     const temp: number[] = [];
@@ -346,6 +352,12 @@ function App() {
                 <option value="8">F8</option>
                 <option value="11">F11</option>
               </Form.Control>
+            </Form.Group>
+            <Form.Group controlId="options">
+              <Form.Check type="checkbox" label="トリミングズームを表示する" checked={trimmingZoomFlg}
+                onChange={() => setTrimmingZoomFlg(!trimmingZoomFlg)}/>
+              <Form.Check type="checkbox" label="単焦点レンズを表示する" checked={singleFocalFlg}
+                onChange={() => setSingleFocalFlg(!singleFocalFlg)}/>/>
             </Form.Group>
             <Form.Group controlId="focalType">
               <Row>
