@@ -288,8 +288,14 @@ function App() {
     }
   }
 
-  const graphOption = () => {
+  const graphOption = (): Chart.ChartOptions => {
+    let titleText = (dataType === 'center' ? '中央部' : '周辺部');
+    titleText += ' - ' + (fValue === '-1' ? '最高値' : fValue === '0' ? '絞り開放' : 'F' + fValue + '以下');
     const temp = {
+      title: {
+        display: true,
+        text: titleText
+      },
       elements: { line: { tension: 0 } },
       scales: {
         xAxes: [{
