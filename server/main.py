@@ -113,7 +113,8 @@ def get_pre_scores_impl(lens_id: str):
         .replace(' - Review / Lens Test - Analysis', '')\
         .replace(' Review / Test Report - Analysis', '')\
         .replace(' - Analysis', '')\
-        .replace(' - Review / Test - Analysis', '')
+        .replace(' - Review / Test - Analysis', '')\
+        .replace(' - Review / Test', '')
 
     m = re.search(r'loadCharts\((\d+)\);', page.text)
     if m is None:
