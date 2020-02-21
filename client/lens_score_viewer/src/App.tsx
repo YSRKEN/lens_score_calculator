@@ -176,7 +176,8 @@ function App() {
   const [fValue, setFValue] = useState('-1');
   const [inputedLensId, setInputedLensId] = useState(0);
   const [lensPreData, setLensPreData] = useState<BasePreData | ImagePreData | TextPreData>({ result: 'ng' });
-  const [focalType, setFocalType] = useState('all');
+  const [focalMin, setFocalMin] = useState(-1);
+  const [focalMax, setFocalMax] = useState(-1);
 
   useEffect(() => {
     refreshLensList();
@@ -211,15 +212,13 @@ function App() {
           data: []
         };
         const score: { 'focal': number, 'score': number }[] = scoreHash[lensId];
-        if (focalType !== 'all') {
-          const minFocal1 = parseInt(focalType.split('-')[0], 10);
-          const maxFocal1 = parseInt(focalType.split('-')[1], 10);
-          const minFocal2 = Math.min(...score.map(r => r.focal));
-          const maxFocal2 = Math.max(...score.map(r => r.focal));
-          if (maxFocal2 < minFocal1 || maxFocal1 < minFocal2) {
-            index += 1;
-            continue;
-          }
+        if (focalMin >= 0 && Math.min(...score.map(r => r.focal)) < focalMin) {
+          index += 1;
+          continue;
+        }
+        if (focalMax >= 0 && Math.max(...score.map(r => r.focal)) > focalMax) {
+          index += 1;
+          continue;
         }
         for (const record of score) {
           (temp2.data as Chart.ChartPoint[]).push({ x: record.focal, y: record.score });
@@ -229,7 +228,7 @@ function App() {
         }
 
         const maxFocal2 = Math.max(...scoreHash[lensId].map(r => r.focal));
-        if (scoreHash[lensId].filter(r => r.focal === maxFocal2).length > 0 && focalType === 'all') {
+        if (scoreHash[lensId].filter(r => r.focal === maxFocal2).length > 0) {
           const color = Chart.helpers.color(LINE_COLORS[index % LINE_COLORS.length]).alpha(0.5).rgbString();
           const temp3: Chart.ChartDataSets = {
             label: '',
@@ -275,10 +274,6 @@ function App() {
     setFValue(e.currentTarget.value);
   }
 
-  const onChangeFocalType = (e: FormEvent<HTMLSelectElement>) => {
-    setFocalType(e.currentTarget.value);
-  };
-
   const onChangeInputedLensId = (e: FormEvent<HTMLInputElement>) => {
     const temp = parseInt(e.currentTarget.value, 10);
     if (!isNaN(temp)) {
@@ -306,12 +301,14 @@ function App() {
       showLines: true,
       animation: { duration: 0 },
     };
-    if (focalType !== 'all') {
-      (temp.scales.xAxes[0] as {[key: string]: any})['ticks'] = {
-        min: parseInt(focalType.split('-')[0], 10),
-        max: parseInt(focalType.split('-')[1], 10),
-      }
+    const temp2: {[key: string]: any} = {};
+    if (focalMin !== -1) {
+      temp2['min'] = focalMin;
     }
+    if (focalMax !== -1) {
+      temp2['max'] = focalMax;
+    }
+    (temp.scales.xAxes[0] as {[key: string]: any})['ticks'] = temp2;
     return temp;
   };
 
@@ -351,13 +348,24 @@ function App() {
               </Form.Control>
             </Form.Group>
             <Form.Group controlId="focalType">
-              <Form.Control as="select" value={focalType} onChange={onChangeFocalType}>
-                <option value="all">全体</option>
-                <option value="0-14">広角</option>
-                <option value="12-40">標準</option>
-                <option value="40-150">望遠</option>
-                <option value="100-400">超望遠</option>
-              </Form.Control>
+              <Row>
+                <Col className="mt-1 mr-1 text-right" xs={2}>
+                  <span>Min={focalMin < 0 ? 'Auto' : focalMin + 'mm'}</span>
+                </Col>
+                <Col>
+                  <input className="form-control" type="range" value={focalMin} min="-1" max="400" step="1"
+                     onChange={e => setFocalMin(parseInt(e.currentTarget.value))}/>
+                </Col>
+              </Row>
+              <Row>
+                <Col className="mt-1 mr-1 text-right" xs={2}>
+                  <span>Min={focalMax < 0 ? 'Auto' : focalMax + 'mm'}</span>
+                </Col>
+                <Col>
+                  <input className="form-control" type="range" value={focalMax} min="-1" max="400" step="1"
+                    onChange={e => setFocalMax(parseInt(e.currentTarget.value))}/>
+                </Col>
+              </Row>
             </Form.Group>
           </Form>
         </Col>
