@@ -214,11 +214,11 @@ function App() {
           data: []
         };
         const score: { 'focal': number, 'score': number }[] = scoreHash[lensId];
-        if (focalMin >= 0 && Math.min(...score.map(r => r.focal)) < focalMin) {
+        if (focalMin >= 0 && Math.max(...score.map(r => r.focal)) < focalMin) {
           index += 1;
           continue;
         }
-        if (focalMax >= 0 && Math.max(...score.map(r => r.focal)) > focalMax) {
+        if (focalMax >= 0 && Math.min(...score.map(r => r.focal)) > focalMax) {
           index += 1;
           continue;
         }
