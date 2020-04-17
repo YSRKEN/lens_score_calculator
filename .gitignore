@@ -1,1 +1,8 @@
 client/node_modules/
+実行用.rar
+server/build/
+server/dist/
+server/root/
+server/static/
+server/templates/
+実行用/
