@@ -4,7 +4,7 @@ block_cipher = None
 
 
 a = Analysis(['main.py'],
-             pathex=['E:\\整理済\\自作ソフトウェア\\レンズスコア計算機\\server'],
+             pathex=['.'],
              binaries=[],
              datas=[],
              hiddenimports=[],
