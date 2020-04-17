@@ -6,7 +6,7 @@ from contextlib import closing
 from pprint import pprint
 from typing import List, Dict, Union
 
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, render_template, send_from_directory
 from flask_cors import CORS
 from requests_html import HTMLSession, HTML, Element
 
@@ -18,8 +18,8 @@ session = HTMLSession()
 
 
 @app.route('/')
-def hello_world():
-    return "Hello World!"
+def index():
+    return render_template('index.html')
 
 
 @app.route('/api/lenses')
@@ -199,6 +199,11 @@ def post_lens_score(lens_id: str):
             cursor.execute(sql, lens_name)
         connection.commit()
     return jsonify({})
+
+
+@app.route("/<static_file>")
+def manifest(static_file: str):
+    return send_from_directory('./root', static_file)
 
 
 if __name__ == '__main__':

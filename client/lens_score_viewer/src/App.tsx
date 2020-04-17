@@ -7,7 +7,7 @@ import Chart from 'chart.js';
 
 const SERVER_URL = window.location.port === '3000'
   ? 'http://127.0.0.1:5000'
-  : `${window.location.protocol}://${window.location.hostname}:${window.location.port}`;
+  : `${window.location.protocol}//${window.location.hostname}:${window.location.port}`;
 
 const LINE_COLORS = [
   '#FF4B00',
